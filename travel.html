@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Responsive Navbar</title>
+  <script src="https://kit.fontawesome.com/ffe6e75801.js" crossorigin="anonymous"></script>
+  <script defer>
+    function toggleMenu() {
+      document.getElementById('menu').classList.toggle('hidden');
+    }
+    //slides
+ window.onload = function () {
+    const slides = [
+  { src: "paris.jpg", link: "paris.html", alt: "Paris", caption: "Explore Paris" },
+  { src: "tokyo.jpg", link: "tokyo.html", alt: "Tokyo", caption: "Discover Tokyo" },
+  { src: "newyork.jpg", link: "newyork.html", alt: "New York", caption: "Feel the Vibe of New York" },
+  { src: "bali.jpg", link: "bali.html", alt: "Bali", caption: "Relax in Bali's Beauty" }
+];
+
+
+    let index = 0;
+    let interval;
+    const img = document.getElementById('slide-image');
+    const link = document.getElementById('slide-link');
+    const slideshow = document.querySelector('.slideshow-container');
+
+      function updateSlide() {
+    img.classList.add('opacity-0');
+    setTimeout(() => {
+      const slide = slides[index];
+      img.src = slide.src;
+      img.alt = slide.alt;
+      caption.textContent = slide.caption;
+      link.href = slide.link;
+      img.classList.remove('opacity-0');
+    }, 400);
+  }
+
+
+    function startSlideshow() {
+      interval = setInterval(() => {
+        index = (index + 1) % slides.length;
+        img.classList.add('opacity-0');
+
+        setTimeout(() => {
+          img.src = slides[index].src;
+          img.alt = slides[index].alt;
+          link.href = slides[index].link;
+          img.classList.remove('opacity-0');
+        }, 400);
+      }, 3000);
+    }
+
+    // Start on load
+    startSlideshow();
+
+    // Pause on hover
+    slideshow.addEventListener('mouseenter', () => clearInterval(interval));
+    slideshow.addEventListener('mouseleave', startSlideshow);
+  }
+  
+
+  // Start on load
+  startSlideshow();
+
+  // Pause on hover
+  slideshow.addEventListener('mouseenter', () => clearInterval(interval));
+  slideshow.addEventListener('mouseleave', startSlideshow);
+
+
+  document.getElementById('searchBtn').addEventListener('click', () => {
+    const region = document.getElementById('region').value.trim().toUpperCase();
+    if (!region) return alert('Please enter a city code (e.g., NYC, PAR)');
+    fetchData(region);
+  });
+
+  async function fetchData(region) {
+    const out = document.getElementById('results');
+    out.innerHTML = '<p class="text-center text-gray-500">Loading...</p>';
+
+    try {
+      const tokenRes = await fetch('https://test.api.amadeus.com/v1/security/oauth2/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: 'YOUR_API_KEY',
+          client_secret: 'YOUR_API_SECRET',
+          grant_type: 'client_credentials'
+        })
+      });
+      const { access_token } = await tokenRes.json();
+
+      const hotelsRes = await fetch(`https://test.api.amadeus.com/v2/shopping/hotel-offers?cityCode=${region}`, {
+        headers: { Authorization: `Bearer ${access_token}` }
+      });
+      const hotelsData = await hotelsRes.json();
+
+      const flightsRes = await fetch(`https://test.api.amadeus.com/v2/shopping/flight-offers?originLocationCode=NYC&destinationLocationCode=${region}&departureDate=2025-08-01&adults=1`, {
+        headers: { Authorization: `Bearer ${access_token}` }
+      });
+      const flightsData = await flightsRes.json();
+
+      displayResults(hotelsData.data, flightsData.data);
+    } catch (err) {
+      console.error(err);
+      out.innerHTML = '<p class="text-center text-red-500">Error loading data.</p>';
+    }
+  }
+
+  function displayResults(hotels = [], flights = []) {
+    const out = document.getElementById('results');
+    out.innerHTML = '';
+
+    hotels.slice(0, 4).forEach(h => {
+      const d = h.hotel;
+      out.innerHTML += `
+        <div class="bg-white rounded shadow p-4">
+          <h3 class="font-semibold">${d.name}</h3>
+          <p class="text-sm">${d.address?.cityName}, ${d.address?.countryCode}</p>
+          <p class="mt-2">From ${h.offers[0].price.total} ${h.offers[0].price.currency}</p>
+        </div>`;
+    });
+
+    flights.slice(0, 4).forEach(f => {
+      const leg = f.itineraries[0].segments[0];
+      out.innerHTML += `
+        <div class="bg-white rounded shadow p-4">
+          <h3 class="font-semibold">${f.validatingAirlineCodes.join(', ')}</h3>
+          <p class="text-sm">${leg.departure.iataCode} → ${leg.arrival.iataCode}</p>
+          <p class="mt-2">${f.price.total} ${f.price.currency}</p>
+        </div>`;
+    });
+
+    if (hotels.length === 0 && flights.length === 0) {
+      out.innerHTML = '<p class="text-center text-gray-500">No results found.</p>';
+    }
+  }
+
+
+
+</script>
+
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+  <style type="text/tailwindcss">
+    @keyframes fade-in {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    .animate-fade-in {
+      animation: fade-in 2s ease-out forwards;
+    }
+  </style>
+
+  <!-- Navbar -->
+ <nav class="bg-transparent absolute top-0 left-0 w-full z-10 p-4">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
+      <div class="text-2xl font-bold text-blue-600">
+        Safar
+      </div>
+
+      <!-- Hamburger Icon -->
+      <button class="sm:hidden text-gray-700 text-2xl" onclick="toggleMenu()">
+        <i class="fas fa-bars"></i>
+      </button>
+
+      <!-- Menu Items -->
+      <ul id="menu" class="hidden sm:flex space-x-6 text-gray-700 text-lg">
+        <li><a href="#" class="hover:text-blue-500"><i class="fas fa-home mr-2"></i>Home</a></li>
+        <li><a href="#" class="hover:text-blue-500"><i class="fas fa-map-marker-alt mr-2"></i>Places</a></li>
+        <li><a href="#" class="hover:text-blue-500"><i class="fas fa-images mr-2"></i>Gallery</a></li>
+        <li><a href="#" class="hover:text-blue-500"><i class="fas fa-envelope mr-2"></i>Contact</a></li>
+      </ul>
+    </div>
+
+    <!-- Mobile Menu -->
+    <ul id="menu" class="sm:hidden hidden mt-4 space-y-2 text-gray-700 text-base">
+      <li><a href="#" class="block px-2 hover:text-blue-500"><i class="fas fa-home mr-2"></i>Home</a></li>
+      <li><a href="#" class="block px-2 hover:text-blue-500"><i class="fas fa-map-marker-alt mr-2"></i>Places</a></li>
+      <li><a href="#" class="block px-2 hover:text-blue-500"><i class="fas fa-images mr-2"></i>Gallery</a></li>
+      <li><a href="#" class="block px-2 hover:text-blue-500"><i class="fas fa-envelope mr-2"></i>Contact</a></li>
+    </ul>
+  </nav>
+
+
+ <div class="bg-cover bg-center h-screen flex items-center justify-center text-white" style="background-image: url('pietro-de-grandi-T7K4aEPoGGk-unsplash.jpg');">
+  <div class="text-center">
+    <h1 class="text-blue-600 text-6xl font-bold opacity-0 animate-fade-in">Safar</h1>
+    <h3 class="text-5xl font-bold mb-4">Discover Beautiful Places</h3>
+    <p class="text-lg mb-6">Have the Adventure of your lifetime </p>
+
+  </div>
+
+</div>
+
+<div class="slideshow-container w-full max-w-6xl mx-auto mt-10 relative overflow-hidden rounded-lg shadow-lg">
+  <a id="slide-link" href="#">
+    <img id="slide-image" class="w-full h-[500px] object-cover transition-opacity duration-700" src="paris.jpg" alt="Paris">
+  <div id="slide-caption" class="absolute bottom-6 left-6 bg-black bg-opacity-50 text-white px-4 py-2 rounded text-xl">
+  Explore Paris
+</div>
+
+  </a>
+
+  <!-- Arrows -->
+  <button id="prev" class="absolute top-1/2 left-3 transform -translate-y-1/2 text-white text-3xl font-bold bg-black bg-opacity-40 rounded-full w-10 h-10 hover:bg-opacity-70 hidden group-hover:block">&#10094;</button>
+  <button id="next" class="absolute top-1/2 right-3 transform -translate-y-1/2 text-white text-3xl font-bold bg-black bg-opacity-40 rounded-full w-10 h-10 hover:bg-opacity-70 hidden group-hover:block">&#10095;</button>
+
+  <!-- Dots -->
+  <div id="dots" class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+    <!-- Dots will be added dynamically -->
+  </div>
+</div>
+
+<!-- Video with Subtitles -->
+<div class="max-w-4xl mx-auto my-10">
+  <h2 class="text-2xl font-bold mb-4 text-center">Travel with Us</h2>
+  <video width="100%" height="auto" controls class="rounded shadow-lg">
+    <source src="travel-promo.mp4" type="video/mp4">
+    <track src="subtitles.vtt" kind="subtitles" srclang="en" label="English" default>
+    Your browser does not support the video tag.
+  </video>
+</div>
+
+<!-- Background Audio -->
+<div class="max-w-4xl mx-auto mt-8 text-center">
+  <h3 class="text-xl font-semibold mb-2">Relaxing Instrumental</h3>
+  <audio controls>
+    <source src="calm-travel-music.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+  </audio>
+</div>
+
+<section id="booking" class="max-w-5xl mx-auto p-6">
+  <h2 class="text-2xl font-bold mb-4">Search Hotels & Flights</h2>
+
+  <div class="flex flex-col sm:flex-row sm:space-x-4 mb-6">
+    <input id="region" type="text" placeholder="City code (e.g. NYC, PAR)"
+           class="border rounded px-3 py-2 flex-1 mb-4 sm:mb-0" />
+    <button id="searchBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+      Search
+    </button>
+  </div>
+
+  <div id="results" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-gray-900 text-white mt-20">
+  <div class="max-w-7xl mx-auto px-4 py-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+
+    <!-- Brand / About -->
+    <div>
+      <h2 class="text-2xl font-bold text-blue-400 mb-3">Safar</h2>
+      <p class="text-gray-300">
+        Discover breathtaking destinations and unforgettable experiences. Start your journey today with Safar.
+      </p>
+    </div>
+
+    <!-- Navigation Links -->
+    <div>
+      <h3 class="text-lg font-semibold mb-2 text-blue-300">Quick Links</h3>
+      <ul class="space-y-2 text-gray-300">
+        <li><a href="#" class="hover:text-blue-400"><i class="fas fa-home mr-2"></i>Home</a></li>
+        <li><a href="#" class="hover:text-blue-400"><i class="fas fa-map-marker-alt mr-2"></i>Places</a></li>
+        <li><a href="#" class="hover:text-blue-400"><i class="fas fa-images mr-2"></i>Gallery</a></li>
+        <li><a href="#" class="hover:text-blue-400"><i class="fas fa-envelope mr-2"></i>Contact</a></li>
+      </ul>
+    </div>
+
+    <!-- Social Media & Contact -->
+    <div>
+      <h3 class="text-lg font-semibold mb-2 text-blue-300">Connect With Us</h3>
+      <div class="flex space-x-4 text-xl mb-4">
+        <a href="#" class="hover:text-blue-400"><i class="fab fa-facebook"></i></a>
+        <a href="#" class="hover:text-blue-400"><i class="fab fa-instagram"></i></a>
+        <a href="#" class="hover:text-blue-400"><i class="fab fa-twitter"></i></a>
+        <a href="#" class="hover:text-blue-400"><i class="fab fa-youtube"></i></a>
+      </div>
+      <div class="space-y-2 text-gray-300 text-sm">
+        <p><i class="fas fa-phone-alt mr-2"></i>+91 9778076708</p>
+        <p><i class="fas fa-envelope mr-2"></i>contact@safartravel.com</p>
+        <p><i class="fas fa-map-marker-alt mr-2"></i>Bangalore, India</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Note -->
+  <div class="text-center text-sm text-gray-500 border-t border-gray-700 py-4 mt-4">
+    &copy; 2025 Safar. All rights reserved.
+  </div>
+</footer>
+
+
+</body>
+</html>
+ 
+
